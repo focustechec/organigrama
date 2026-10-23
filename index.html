@@ -1,0 +1,413 @@
+<!doctype html>
+<html lang="es">
+<head>
+<base target="_top">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+:root{--bg:#f6f7f9;--card:#fff;--text:#1c2430;--muted:#667085;--line:#c5ccd6;--border:#e3e7ec;--ok:#1f8a4c;--warn:#b7791f;--bad:#c53030;--chip:#eef1f5;--accent:#1F3A5F;--f:#B83280;--m:#2F6FB0}
+*{box-sizing:border-box}
+body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",Arial,sans-serif;background:var(--bg);color:var(--text);font-size:14px}
+header{display:flex;flex-wrap:wrap;align-items:center;gap:12px;padding:14px 16px;background:var(--card);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:5}
+header h1{font-size:18px;margin:0;flex:1;min-width:200px}
+.tabs{display:flex;gap:4px;background:var(--chip);padding:3px;border-radius:9px}
+.tabs button{border:0;background:transparent;padding:7px 14px;border-radius:7px;font:inherit;cursor:pointer;color:var(--muted)}
+.tabs button.on{background:var(--card);color:var(--text);font-weight:600;box-shadow:0 1px 2px rgba(0,0,0,.1)}
+.gen{font-size:12px;color:var(--muted)}
+.avisos{margin:10px 16px 0;padding:10px 12px;border-radius:8px;background:#FFF8E1;border:1px solid #F6E05E;color:#744210;font-size:13px}
+.toolbar{display:flex;flex-wrap:wrap;gap:8px;align-items:flex-end;padding:12px 16px}
+.fld{display:flex;flex-direction:column;gap:3px;min-width:150px;flex:1 1 150px;max-width:240px}
+.fld label{font-size:11px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);font-weight:600}
+select,input{font:inherit;padding:7px 8px;border:1px solid var(--border);border-radius:7px;background:var(--card);color:var(--text);width:100%}
+.btn{font:inherit;border:1px solid var(--border);background:var(--card);border-radius:7px;padding:7px 12px;cursor:pointer;white-space:nowrap}
+.btn:hover{background:var(--chip)}
+.btn.pri{background:var(--accent);color:#fff;border-color:var(--accent)}
+.btngrp{display:flex;gap:4px}
+.legend{display:flex;flex-wrap:wrap;gap:6px;padding:0 16px 8px}
+.legend span{display:inline-flex;align-items:center;gap:6px;font-size:12px;background:var(--chip);padding:3px 9px;border-radius:99px}
+.legend i{width:10px;height:10px;border-radius:3px;display:inline-block;border:1px solid rgba(0,0,0,.15)}
+.wrap{display:flex;gap:12px;padding:0 16px 16px;align-items:flex-start}
+.chartbox{flex:1;overflow:auto;background:var(--card);border:1px solid var(--border);border-radius:12px;padding:20px 8px;min-width:0;max-height:calc(100vh - 210px)}
+.tree{width:max-content;margin:0 auto}
+.tree ul{padding-top:18px;position:relative;display:flex;justify-content:center;margin:0;padding-left:0}
+.tree li{list-style:none;text-align:center;position:relative;padding:18px 6px 0}
+.tree li::before,.tree li::after{content:"";position:absolute;top:0;right:50%;border-top:1.5px solid var(--line);width:50%;height:18px}
+.tree li::after{right:auto;left:50%;border-left:1.5px solid var(--line)}
+.tree li:only-child::before,.tree li:only-child::after{display:none}
+.tree li:only-child{padding-top:0}
+.tree li:first-child::before,.tree li:last-child::after{border:0 none}
+.tree li:last-child::before{border-right:1.5px solid var(--line);border-radius:0 6px 0 0}
+.tree li:first-child::after{border-radius:6px 0 0 0}
+.tree ul ul::before{content:"";position:absolute;top:0;left:50%;border-left:1.5px solid var(--line);height:18px}
+.tree>ul{padding-top:0}
+.forest{display:flex;gap:40px;align-items:flex-start}
+.node{display:inline-block;width:172px;background:var(--card);border:1px solid var(--border);border-top:5px solid var(--c);border-radius:10px;padding:8px 9px 6px;text-align:left;cursor:pointer;box-shadow:0 1px 2px rgba(0,0,0,.06);transition:transform .1s,box-shadow .1s;position:relative}
+.node:hover{transform:translateY(-2px);box-shadow:0 4px 12px rgba(0,0,0,.12)}
+.node.sel{outline:2px solid var(--accent);outline-offset:2px}
+.node.hit{box-shadow:0 0 0 3px #F6E05E}
+.node.vac{border-style:dashed;border-top-style:solid}
+.node.light{border-top-color:#CBD5E0}
+.n-area{font-size:10px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);font-weight:700;display:flex;align-items:center;gap:5px}
+.n-area i{width:8px;height:8px;border-radius:2px;background:var(--c);border:1px solid rgba(0,0,0,.15);flex:none}
+.n-cargo{font-size:13px;font-weight:600;margin:2px 0 6px;line-height:1.2}
+.p{display:flex;align-items:center;gap:6px;font-size:12px;margin-top:3px}
+.av{width:22px;height:22px;border-radius:50%;background:var(--c);color:var(--ct);font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;flex:none;border:1px solid rgba(0,0,0,.12)}
+.dot{width:8px;height:8px;border-radius:50%;margin-left:auto;flex:none}
+.more{font-size:11px;color:var(--muted);margin-top:3px}
+.vacb{font-size:11px;color:var(--muted);border:1px dashed var(--line);border-radius:6px;padding:2px 6px;margin-top:4px;display:inline-block}
+.tog{display:block;margin:6px auto 0;font-size:11px;border:1px solid var(--border);background:var(--chip);border-radius:99px;padding:1px 9px;cursor:pointer;color:var(--muted)}
+.panel{width:340px;flex:none;background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px;position:sticky;top:76px;max-height:calc(100vh - 210px);overflow:auto}
+.panel h2{font-size:16px;margin:2px 0}
+.panel h3{font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin:16px 0 6px}
+.kv{font-size:13px;color:var(--muted)}
+.kv b{color:var(--text);font-weight:600}
+table{width:100%;border-collapse:collapse;font-size:13px}
+td,th{padding:6px 6px;border-bottom:1px solid var(--border);text-align:left;vertical-align:middle}
+th{color:var(--muted);font-weight:600;font-size:12px;background:var(--card);position:sticky;top:0}
+td.n,th.n{text-align:right;font-variant-numeric:tabular-nums}
+.score{display:flex;align-items:center;gap:10px;margin:6px 0}
+.big{font-size:24px;font-weight:700}
+.bar{flex:1;height:8px;background:var(--chip);border-radius:9px;overflow:hidden}
+.bar i{display:block;height:100%}
+.ok{color:var(--ok)}.warn{color:var(--warn)}.bad{color:var(--bad)}
+.person{border:1px solid var(--border);border-radius:10px;padding:10px;margin-top:8px}
+.hint{color:var(--muted);font-size:13px}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;padding:0 16px 12px}
+.kpis>div{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:10px 12px}
+.kpis .lbl{font-size:12px;color:var(--muted)}
+.kpis .val{font-size:22px;font-weight:700;margin-top:2px}
+.kpis .sm{font-size:12px;color:var(--muted)}
+.box{background:var(--card);border:1px solid var(--border);border-radius:12px;margin:0 16px 16px;overflow:auto}
+.box h3{font-size:14px;margin:0;padding:12px 14px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}
+.hbar{display:flex;height:12px;border-radius:4px;overflow:hidden;min-width:2px;background:var(--chip)}
+.hbar i{display:block;height:100%}
+tr.click{cursor:pointer}
+tr.click:hover td{background:var(--chip)}
+.lg{display:inline-flex;gap:10px;font-size:12px;color:var(--muted);font-weight:400}
+.lg i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:4px;vertical-align:-1px}
+.hidden{display:none!important}
+.msg{font-size:13px;padding:0 16px 10px}
+@media (max-width:900px){.wrap{flex-direction:column}.panel{width:100%;position:static;max-height:none}.chartbox{max-height:70vh}}
+</style>
+</head>
+<body>
+<header>
+  <h1 id="titulo"></h1>
+  <div class="tabs"><button id="tabOrg" class="on">Organigrama</button><button id="tabRep">Reporte de personal</button></div>
+  <span class="gen" id="gen"></span>
+</header>
+<div id="avisos"></div>
+
+<!-- ================= ORGANIGRAMA ================= -->
+<section id="vOrg">
+  <div class="toolbar">
+    <div class="fld"><label>Empresa</label><select id="oEmp"></select></div>
+    <div class="fld"><label>Mostrar desde el cargo</label><select id="oDesde"></select></div>
+    <div class="fld"><label>Buscar cargo o persona</label><input id="oBuscar" placeholder="Ej. Contador, Patricia…"></div>
+    <div class="btngrp">
+      <button class="btn" id="zOut" title="Alejar">−</button>
+      <button class="btn" id="zIn" title="Acercar">+</button>
+      <button class="btn" id="expAll">Expandir todo</button>
+      <button class="btn" id="colAll">Contraer</button>
+    </div>
+  </div>
+  <div class="legend" id="legend"></div>
+  <div class="wrap">
+    <div class="chartbox"><div class="tree" id="tree"></div></div>
+    <aside class="panel" id="panel"><div class="hint">Haz clic en un cargo para ver su detalle.</div></aside>
+  </div>
+</section>
+
+<!-- ================= REPORTE ================= -->
+<section id="vRep" class="hidden">
+  <div class="toolbar">
+    <div class="fld"><label>Empresa</label><select id="fEmpresa"></select></div>
+    <div class="fld"><label>Área</label><select id="fArea"></select></div>
+    <div class="fld"><label>Departamento</label><select id="fDepto"></select></div>
+    <div class="fld"><label>Cargo</label><select id="fCargo"></select></div>
+    <div class="fld"><label>Nivel jerárquico</label><select id="fNivel"></select></div>
+    <div class="fld"><label>Sexo</label><select id="fSexo"></select></div>
+    <div class="fld"><label>Bajo el mando de</label><select id="fJefe"></select></div>
+  </div>
+  <div class="toolbar" style="padding-top:0">
+    <div class="fld"><label>Agrupar por</label>
+      <select id="fAgrupar">
+        <option value="area">Área</option><option value="depto">Departamento</option>
+        <option value="cargo">Cargo</option><option value="nivel">Nivel jerárquico</option>
+        <option value="empresa">Empresa</option><option value="sexo">Sexo</option>
+      </select></div>
+    <button class="btn" id="limpiar">Limpiar filtros</button>
+    <button class="btn pri" id="exportar">Exportar a Google Sheets</button>
+  </div>
+  <div class="msg" id="expMsg"></div>
+  <div class="kpis" id="kpis"></div>
+  <div class="box">
+    <h3><span id="resTitle">Resumen</span><span class="lg"><span><i style="background:var(--m)"></i>Hombres</span><span><i style="background:var(--f)"></i>Mujeres</span></span></h3>
+    <table id="resumen"></table>
+  </div>
+  <div class="box">
+    <h3><span id="detTitle">Detalle de personas</span></h3>
+    <table id="detalle"></table>
+  </div>
+</section>
+
+<script>
+const D = <?!= payload ?>;
+const P = <?!= params ?>;
+
+/* ---------- colores ---------- */
+const COLORS = {"azul marino":"#1F3A5F","azul":"#2F6FB0","celeste":"#0E8FB8","verde azulado":"#2B7A78","verde":"#2F855A","verde oliva":"#6B7F2A","mostaza":"#B7791F","naranja":"#C05621","rojo ladrillo":"#B83232","vino":"#8B2E4F","rosa oscuro":"#B83280","morado":"#7B3F99","índigo":"#4C51BF","indigo":"#4C51BF","café":"#7B5236","cafe":"#7B5236","gris pizarra":"#4A5568","negro":"#1A1A1A","gris claro":"#A0AEC0","blanco":"#FFFFFF"};
+const PALETTE = ["#1F3A5F","#2B7A78","#C05621","#7B3F99","#2F6FB0","#2F855A","#B7791F","#8B2E4F","#0E8FB8","#4C51BF","#B83232","#6B7F2A","#B83280","#7B5236","#4A5568"];
+function lum(hex){const n=parseInt(hex.slice(1),16),r=(n>>16)&255,g=(n>>8)&255,b=n&255;return (0.299*r+0.587*g+0.114*b)/255}
+
+/* ---------- índices ---------- */
+const by = arr => Object.fromEntries(arr.map(x=>[x.id,x]));
+const EMP = by(D.empresas), NIV = by(D.niveles), AREA = by(D.areas), DEP = by(D.deptos), CAR = by(D.cargos);
+D.areas.forEach((a,i)=>{
+  const k=(a.color||"").trim().toLowerCase();
+  a.hex = COLORS[k] || (/^#[0-9a-f]{6}$/i.test(a.color)?a.color.toUpperCase():PALETTE[i%PALETTE.length]);
+  a.light = lum(a.hex)>0.8;
+});
+D.cargos.forEach(c=>{
+  const d=DEP[c.depto_id]||{}, a=AREA[d.area_id]||{};
+  c.depto=d.nombre||"(sin depto)"; c.area_id=a.id||""; c.area=a.nombre||"(sin área)";
+  c.empresa_id=a.empresa_id||""; c.empresa=(EMP[a.empresa_id]||{}).nombre||"";
+  c.hex=a.hex||"#A0AEC0"; c.light=!!a.light;
+  const n=NIV[c.nivel_id]||{}; c.nivel=n.nombre||"(sin nivel)"; c.orden=n.orden??99; c.bmin=n.min; c.bmax=n.max;
+  c.occ=[];
+});
+const sinCargo=[];
+D.empleados.forEach(e=>{ if(CAR[e.cargo_id]) CAR[e.cargo_id].occ.push(e); else sinCargo.push(e); });
+const KIDS={}; D.cargos.forEach(c=>{ if(c.parent && CAR[c.parent]) (KIDS[c.parent]=KIDS[c.parent]||[]).push(c); });
+Object.values(KIDS).forEach(l=>l.sort((a,b)=>a.orden-b.orden||a.area.localeCompare(b.area)));
+function descendants(id,set=new Set()){(KIDS[id]||[]).forEach(k=>{if(!set.has(k.id)){set.add(k.id);descendants(k.id,set)}});return set}
+function chain(c){const r=[];let p=c.parent,g=0;while(p&&CAR[p]&&g++<50){r.unshift(CAR[p].nombre);p=CAR[p].parent}return r}
+
+/* ---------- ajuste al perfil ---------- */
+const EDU={"bachiller":1,"tecnólogo":2,"tecnologo":2,"tercer nivel":3,"cuarto nivel":4};
+function score(e,c){
+  let pts=0,tot=0,det={};
+  const ee=EDU[(e.edu||"").toLowerCase()], ce=EDU[(c.edu_min||"").toLowerCase()];
+  if(ee&&ce){tot+=40;det.edu=ee>=ce;pts+=det.edu?40:15}
+  if(c.exp_min!=null&&e.exp!=null){tot+=40;det.exp=e.exp>=c.exp_min;pts+=40*Math.min(c.exp_min?e.exp/c.exp_min:1,1)}
+  if(e.salario!=null&&c.bmin!=null&&c.bmax!=null){tot+=20;det.band=e.salario>=c.bmin&&e.salario<=c.bmax;pts+=det.band?20:0}
+  return {s: tot? Math.round(pts/tot*100):null, det};
+}
+const cls=s=>s==null?"":s>=80?"ok":s>=60?"warn":"bad";
+const col=s=>s==null?"var(--line)":s>=80?"var(--ok)":s>=60?"var(--warn)":"var(--bad)";
+const money=n=>n==null?"—":"$"+Number(n).toLocaleString("es-EC",{maximumFractionDigits:0});
+const esc=s=>String(s??"").replace(/[&<>"]/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[m]));
+const ini=s=>esc(String(s).split(/\s+/).filter(Boolean).map(w=>w[0]).slice(0,2).join("").toUpperCase());
+const $=id=>document.getElementById(id);
+const opts=(list,all="Todos")=>`<option value="">${all}</option>`+list.map(([v,t])=>`<option value="${esc(v)}">${esc(t)}</option>`).join("");
+
+/* ---------- cabecera ---------- */
+$("titulo").textContent=D.titulo; $("gen").textContent="Datos al "+D.generado;
+const avisos=[...(D.avisos||[])];
+if(sinCargo.length) avisos.push(`${sinCargo.length} empleado(s) activos no tienen un cargo válido asignado: ${sinCargo.slice(0,5).map(e=>esc(e.nombre)).join(", ")}${sinCargo.length>5?"…":""}`);
+if(avisos.length) $("avisos").innerHTML=`<div class="avisos">${avisos.map(esc).join("<br>")}</div>`;
+function tab(rep){$("vOrg").classList.toggle("hidden",rep);$("vRep").classList.toggle("hidden",!rep);$("tabOrg").classList.toggle("on",!rep);$("tabRep").classList.toggle("on",rep);if(rep)renderRep();}
+$("tabOrg").onclick=()=>tab(false); $("tabRep").onclick=()=>tab(true);
+
+/* ================= ORGANIGRAMA ================= */
+const collapsed=new Set(); let zoom=1, selId=null;
+$("oEmp").innerHTML=opts(D.empresas.map(e=>[e.id,e.nombre]),"Todas las empresas");
+const cargosOrden=[...D.cargos].sort((a,b)=>a.orden-b.orden||a.nombre.localeCompare(b.nombre));
+$("oDesde").innerHTML=opts(cargosOrden.map(c=>[c.id,`${c.nombre} · ${c.area}`]),"Cargo más alto");
+
+function card(c){
+  const libres=Math.max(0,c.plazas-c.occ.length), kids=(KIDS[c.id]||[]).length;
+  const ct=c.light?"#1c2430":"#fff";
+  const ppl=c.occ.slice(0,3).map(e=>{const s=score(e,c).s;return `<div class="p"><div class="av">${ini(e.nombre)}</div>${esc(e.nombre)}<span class="dot" style="background:${col(s)}" title="Ajuste al perfil: ${s??"sin datos"}"></span></div>`}).join("");
+  return `<div class="node ${c.occ.length?"":"vac"} ${c.light?"light":""} ${c.id===selId?"sel":""}" style="--c:${c.hex};--ct:${ct}" data-id="${esc(c.id)}">
+    <div class="n-area"><i></i>${esc(c.area)}</div><div class="n-cargo">${esc(c.nombre)}</div>${ppl}
+    ${c.occ.length>3?`<div class="more">+${c.occ.length-3} más</div>`:""}
+    ${libres>0?`<div class="vacb">${libres} vacante${libres>1?"s":""}</div>`:""}
+    ${kids?`<button class="tog" data-t="${esc(c.id)}">${collapsed.has(c.id)?"▸":"▾"} ${kids}</button>`:""}</div>`;
+}
+function build(c,scope){
+  const ch=(KIDS[c.id]||[]).filter(k=>!scope||scope.has(k.id));
+  return `<li>${card(c)}${ch.length&&!collapsed.has(c.id)?`<ul>${ch.map(k=>build(k,scope)).join("")}</ul>`:""}</li>`;
+}
+function renderOrg(){
+  const emp=$("oEmp").value, desde=$("oDesde").value;
+  let roots, scope=null;
+  if(desde){ roots=[CAR[desde]]; }
+  else{
+    const S=D.cargos.filter(c=>!emp||c.empresa_id===emp); scope=new Set(S.map(c=>c.id));
+    roots=S.filter(c=>!c.parent||!scope.has(c.parent)).sort((a,b)=>a.orden-b.orden);
+  }
+  $("tree").innerHTML = roots.length
+    ? `<div class="forest">${roots.map(r=>`<div><ul>${build(r,scope)}</ul></div>`).join("")}</div>`
+    : `<div class="hint" style="padding:30px">No hay cargos para mostrar. Revisa que existan cargos activos y que el cargo más alto tenga vacío "reporta_a_cargo_id".</div>`;
+  $("tree").style.zoom=zoom;
+  const used=new Set(D.cargos.filter(c=>!emp||c.empresa_id===emp).map(c=>c.area_id));
+  $("legend").innerHTML=D.areas.filter(a=>used.has(a.id)).map(a=>`<span><i style="background:${a.hex}"></i>${esc(a.nombre)}</span>`).join("")+`<span><i style="border:1.5px dashed var(--muted);background:none"></i>Vacante</span>`;
+  hilite();
+}
+function hilite(){
+  const q=$("oBuscar").value.trim().toLowerCase(); let first=null;
+  document.querySelectorAll(".node").forEach(n=>{
+    const c=CAR[n.dataset.id]; const hit=q&&(c.nombre.toLowerCase().includes(q)||c.occ.some(e=>e.nombre.toLowerCase().includes(q)));
+    n.classList.toggle("hit",!!hit); if(hit&&!first)first=n;
+  });
+  if(first) first.scrollIntoView({behavior:"smooth",block:"center",inline:"center"});
+}
+function openPath(id){let p=CAR[id]&&CAR[id].parent,g=0;while(p&&CAR[p]&&g++<50){collapsed.delete(p);p=CAR[p].parent}}
+function show(id,scroll){
+  const c=CAR[id]; if(!c) return; selId=id;
+  document.querySelectorAll(".node").forEach(e=>e.classList.toggle("sel",e.dataset.id===id));
+  const below=descendants(id); const nBelow=[...below].reduce((s,k)=>s+CAR[k].occ.length,0);
+  const ck=b=>b==null?'<span class="kv">—</span>':b?'<span class="ok">✔</span>':'<span class="bad">✖</span>';
+  const ppl=c.occ.length?c.occ.map(e=>{
+    const r=score(e,c);
+    const rows=[];
+    if(c.edu_min||e.edu) rows.push(`<tr><td>Educación</td><td>${esc(c.edu_min||"—")}</td><td>${esc(e.edu||"—")}</td><td>${ck(r.det.edu)}</td></tr>`);
+    if(c.exp_min!=null||e.exp!=null) rows.push(`<tr><td>Experiencia</td><td>${c.exp_min??"—"} año${c.exp_min==1?"":"s"}</td><td>${e.exp??"—"} año${e.exp==1?"":"s"}</td><td>${ck(r.det.exp)}</td></tr>`);
+    if(D.mostrarSalarios&&c.bmin!=null) rows.push(`<tr><td>Salario</td><td>${money(c.bmin)}–${money(c.bmax)}</td><td>${money(e.salario)}</td><td>${ck(r.det.band)}</td></tr>`);
+    return `<div class="person"><b>${esc(e.nombre)}</b> <span class="kv">· ${e.sexo==="F"?"Mujer":e.sexo==="M"?"Hombre":esc(e.sexo)}${e.ingreso?" · ingreso "+esc(e.ingreso):""}</span>
+      ${r.s!=null?`<div class="score"><span class="big ${cls(r.s)}">${r.s}</span><div class="bar"><i style="width:${r.s}%;background:${col(r.s)}"></i></div></div>`:`<div class="kv" style="margin-top:6px">Sin datos de educación/experiencia para calcular el ajuste.</div>`}
+      ${rows.length?`<table><tr><th>Requisito</th><th>Perfil</th><th>Persona</th><th></th></tr>${rows.join("")}</table>`:""}</div>`;
+  }).join(""):`<div class="hint">Cargo vacante.</div>`;
+  $("panel").innerHTML=`
+    <div class="n-area" style="--c:${c.hex}"><i></i>${esc(c.empresa)} · ${esc(c.area)} · ${esc(c.depto)}</div>
+    <h2>${esc(c.nombre)}</h2>
+    <div class="kv">Nivel <b>${esc(c.nivel)}</b> · Plazas <b>${c.occ.length}/${c.plazas}</b> · Personas bajo su mando <b>${nBelow}</b></div>
+    <div class="kv" style="margin-top:4px">Reporta a: <b>${esc(chain(c).join(" › ")||"— (cargo raíz)")}</b></div>
+    ${D.mostrarSalarios&&c.bmin!=null?`<div class="kv" style="margin-top:4px">Banda del nivel: <b>${money(c.bmin)} – ${money(c.bmax)}</b>${c.salario_ref!=null?` · Referencial <b>${money(c.salario_ref)}</b>`:""}</div>`:""}
+    <div style="display:flex;gap:6px;margin-top:10px;flex-wrap:wrap">
+      <button class="btn" onclick="verDesde('${esc(c.id)}')">Ver desde este cargo</button>
+      ${below.size?`<button class="btn" onclick="repJefe('${esc(c.id)}')">Reporte de su equipo</button>`:""}
+    </div>
+    ${c.comp?`<h3>Competencias</h3><div class="kv">${esc(c.comp)}</div>`:""}
+    ${c.funciones?`<h3>Funciones</h3><div class="kv">${esc(c.funciones)}</div>`:""}
+    <h3>Ocupantes y ajuste al perfil</h3>${ppl}`;
+  if(scroll){const n=document.querySelector(`.node[data-id="${CSS.escape(id)}"]`); if(n) n.scrollIntoView({block:"center",inline:"center"});}
+}
+window.verDesde=id=>{$("oDesde").value=id;collapsed.clear();renderOrg();show(id)};
+window.repJefe=id=>{resetF();$("fJefe").value=id;tab(true)};
+$("tree").addEventListener("click",e=>{
+  const t=e.target.closest(".tog"); if(t){e.stopPropagation();const id=t.dataset.t;collapsed.has(id)?collapsed.delete(id):collapsed.add(id);renderOrg();return}
+  const n=e.target.closest(".node"); if(n) show(n.dataset.id);
+});
+$("oEmp").onchange=()=>{$("oDesde").value="";renderOrg()}; $("oDesde").onchange=renderOrg;
+$("oBuscar").oninput=()=>{const q=$("oBuscar").value.trim().toLowerCase(); if(q){D.cargos.forEach(c=>{if(c.nombre.toLowerCase().includes(q)||c.occ.some(e=>e.nombre.toLowerCase().includes(q)))openPath(c.id)});} renderOrg()};
+$("zIn").onclick=()=>{zoom=Math.min(1.6,zoom+0.1);$("tree").style.zoom=zoom};
+$("zOut").onclick=()=>{zoom=Math.max(0.4,zoom-0.1);$("tree").style.zoom=zoom};
+$("expAll").onclick=()=>{collapsed.clear();renderOrg()};
+$("colAll").onclick=()=>{D.cargos.forEach(c=>{if((KIDS[c.id]||[]).length&&c.orden>=3)collapsed.add(c.id)});renderOrg()};
+
+/* ================= REPORTE ================= */
+const F=["fEmpresa","fArea","fDepto","fCargo","fNivel","fSexo","fJefe"];
+function fillFilters(){
+  const v=Object.fromEntries(F.map(f=>[f,$(f).value]));
+  $("fEmpresa").innerHTML=opts(D.empresas.map(e=>[e.id,e.nombre]),"Todas");
+  const ar=D.areas.filter(a=>!v.fEmpresa||a.empresa_id===v.fEmpresa);
+  $("fArea").innerHTML=opts(ar.map(a=>[a.id,a.nombre]));
+  const arIds=new Set(ar.map(a=>a.id));
+  const dp=D.deptos.filter(d=>arIds.has(d.area_id)&&(!v.fArea||d.area_id===v.fArea));
+  $("fDepto").innerHTML=opts(dp.map(d=>[d.id,`${d.nombre} (${(AREA[d.area_id]||{}).nombre||""})`]));
+  const dpIds=new Set(dp.map(d=>d.id));
+  const cg=cargosOrden.filter(c=>dpIds.has(c.depto_id)&&(!v.fDepto||c.depto_id===v.fDepto));
+  $("fCargo").innerHTML=opts(cg.map(c=>[c.id,c.nombre]));
+  $("fNivel").innerHTML=opts([...D.niveles].sort((a,b)=>(a.orden??99)-(b.orden??99)).map(n=>[n.id,n.nombre]));
+  $("fSexo").innerHTML=opts([["M","Hombres"],["F","Mujeres"]]);
+  $("fJefe").innerHTML=opts(cargosOrden.filter(c=>(KIDS[c.id]||[]).length).map(c=>[c.id,`${c.nombre} · ${c.area}`]),"Nadie (sin filtro)");
+  F.forEach(f=>{const s=$(f); if([...s.options].some(o=>o.value===v[f])) s.value=v[f];});
+}
+function resetF(){F.forEach(f=>$(f).value="");fillFilters()}
+function current(){
+  const v=Object.fromEntries(F.map(f=>[f,$(f).value]));
+  const jefeSet=v.fJefe?descendants(v.fJefe):null;
+  const cargos=D.cargos.filter(c=>(!v.fEmpresa||c.empresa_id===v.fEmpresa)&&(!v.fArea||c.area_id===v.fArea)&&(!v.fDepto||c.depto_id===v.fDepto)&&(!v.fCargo||c.id===v.fCargo)&&(!v.fNivel||c.nivel_id===v.fNivel)&&(!jefeSet||jefeSet.has(c.id)));
+  const people=cargos.flatMap(c=>c.occ.filter(e=>!v.fSexo||e.sexo===v.fSexo).map(e=>({e,c})));
+  return {v,cargos,people};
+}
+const DIM={
+  empresa:{t:"Empresa",k:c=>c.empresa_id,l:c=>c.empresa,f:"fEmpresa"},
+  area:{t:"Área",k:c=>c.area_id,l:c=>c.area,f:"fArea"},
+  depto:{t:"Departamento",k:c=>c.depto_id,l:c=>`${c.depto} · ${c.area}`,f:"fDepto"},
+  cargo:{t:"Cargo",k:c=>c.id,l:c=>`${c.nombre} · ${c.depto}`,f:"fCargo"},
+  nivel:{t:"Nivel jerárquico",k:c=>c.nivel_id,l:c=>c.nivel,f:"fNivel",o:c=>c.orden},
+  sexo:{t:"Sexo",f:"fSexo"}
+};
+let lastExport=null;
+function renderRep(){
+  const {v,cargos,people}=current(); const g=$("fAgrupar").value, dim=DIM[g];
+  const H=people.filter(p=>p.e.sexo==="M").length, M=people.filter(p=>p.e.sexo==="F").length;
+  const plazas=cargos.reduce((s,c)=>s+c.plazas,0), vac=cargos.reduce((s,c)=>s+Math.max(0,c.plazas-c.occ.length),0);
+  const pct=(a,b)=>b?Math.round(a/b*100)+"%":"—";
+  $("kpis").innerHTML=`
+    <div><div class="lbl">Personas</div><div class="val">${people.length}</div><div class="sm">en ${cargos.length} cargos</div></div>
+    <div><div class="lbl">Hombres</div><div class="val" style="color:var(--m)">${H}</div><div class="sm">${pct(H,people.length)}</div></div>
+    <div><div class="lbl">Mujeres</div><div class="val" style="color:var(--f)">${M}</div><div class="sm">${pct(M,people.length)}</div></div>
+    <div><div class="lbl">Plazas aprobadas</div><div class="val">${plazas}</div><div class="sm">ocupación ${pct(plazas-vac,plazas)}</div></div>
+    <div><div class="lbl">Vacantes</div><div class="val">${vac}</div><div class="sm">&nbsp;</div></div>`;
+
+  // agrupación
+  const groups=new Map();
+  const add=(key,label,order)=>{if(!groups.has(key))groups.set(key,{key,label,order,plazas:0,vac:0,H:0,M:0,O:0});return groups.get(key)};
+  if(g==="sexo"){
+    people.forEach(({e})=>{const k=e.sexo;const G=add(k,k==="M"?"Hombres":k==="F"?"Mujeres":k,0);G[k==="M"?"H":k==="F"?"M":"O"]++;});
+  }else{
+    cargos.forEach(c=>{const G=add(dim.k(c),dim.l(c),dim.o?dim.o(c):0);G.plazas+=c.plazas;G.vac+=Math.max(0,c.plazas-c.occ.length);});
+    people.forEach(({e,c})=>{const G=groups.get(dim.k(c));G[e.sexo==="M"?"H":e.sexo==="F"?"M":"O"]++;});
+  }
+  const rows=[...groups.values()].map(G=>({...G,tot:G.H+G.M+G.O}));
+  rows.sort((a,b)=>g==="nivel"?a.order-b.order:b.tot-a.tot||a.label.localeCompare(b.label));
+  const max=Math.max(1,...rows.map(r=>r.tot));
+  const showPl=g!=="sexo";
+  $("resTitle").textContent=`Resumen por ${dim.t.toLowerCase()} (${rows.length})`;
+  $("resumen").innerHTML=`<tr><th>${dim.t}</th><th class="n">Personas</th><th class="n">Hombres</th><th class="n">Mujeres</th><th class="n">% Mujeres</th>${showPl?`<th class="n">Plazas</th><th class="n">Vacantes</th>`:""}<th style="width:28%"></th></tr>`+
+    rows.map(r=>`<tr class="click" data-k="${esc(r.key)}" title="Clic para filtrar"><td>${esc(r.label)}</td><td class="n"><b>${r.tot}</b></td><td class="n">${r.H}</td><td class="n">${r.M}</td><td class="n">${pct(r.M,r.tot)}</td>${showPl?`<td class="n">${r.plazas}</td><td class="n">${r.vac||""}</td>`:""}
+      <td><div class="hbar" style="width:${Math.max(r.tot/max*100,1)}%"><i style="width:${r.tot?r.H/r.tot*100:0}%;background:var(--m)"></i><i style="width:${r.tot?r.M/r.tot*100:0}%;background:var(--f)"></i></div></td></tr>`).join("")+
+    `<tr><td><b>Total</b></td><td class="n"><b>${people.length}</b></td><td class="n"><b>${H}</b></td><td class="n"><b>${M}</b></td><td class="n"><b>${pct(M,people.length)}</b></td>${showPl?`<td class="n"><b>${plazas}</b></td><td class="n"><b>${vac}</b></td>`:""}<td></td></tr>`;
+  document.querySelectorAll("#resumen tr.click").forEach(tr=>tr.onclick=()=>{$(dim.f).value=tr.dataset.k;fillFilters();$(dim.f).value=tr.dataset.k;
+    const next={empresa:"area",area:"depto",depto:"cargo",cargo:"cargo",nivel:"area",sexo:"area"}[g];$("fAgrupar").value=next;renderRep();});
+
+  // detalle
+  const det=[...people].sort((a,b)=>a.c.orden-b.c.orden||a.c.area.localeCompare(b.c.area)||a.e.nombre.localeCompare(b.e.nombre));
+  const sal=D.mostrarSalarios;
+  $("detTitle").textContent=`Detalle de personas (${det.length})`;
+  $("detalle").innerHTML=`<tr><th>Nombre</th><th>Sexo</th><th>Cargo</th><th>Nivel</th><th>Departamento</th><th>Área</th><th>Empresa</th>${sal?'<th class="n">Salario</th>':""}<th class="n">Ajuste</th></tr>`+
+    det.slice(0,1000).map(({e,c})=>{const s=score(e,c).s;return `<tr><td>${esc(e.nombre)}</td><td>${esc(e.sexo)}</td><td>${esc(c.nombre)}</td><td>${esc(c.nivel)}</td><td>${esc(c.depto)}</td><td>${esc(c.area)}</td><td>${esc(c.empresa)}</td>${sal?`<td class="n">${money(e.salario)}</td>`:""}<td class="n ${cls(s)}">${s??"—"}</td></tr>`}).join("")+
+    (det.length>1000?`<tr><td colspan="9" class="hint">Mostrando 1000 de ${det.length}. Exporta a Google Sheets para ver todo.</td></tr>`:"");
+
+  // datos para exportar
+  const ftxt=F.filter(f=>v[f]).map(f=>`${$(f).closest(".fld").querySelector("label").textContent}: ${$(f).selectedOptions[0].text}`).join(" | ")||"Sin filtros";
+  lastExport={filtros:ftxt,agrupar:dim.t,
+    resumen:{headers:[dim.t,"Personas","Hombres","Mujeres","% Mujeres",...(showPl?["Plazas","Vacantes"]:[])],
+      rows:rows.map(r=>[r.label,r.tot,r.H,r.M,r.tot?r.M/r.tot:0,...(showPl?[r.plazas,r.vac]:[])])},
+    detalle:{headers:["Nombre","Sexo","Cargo","Nivel","Departamento","Área","Empresa",...(sal?["Salario"]:[]),"Ajuste"],
+      rows:det.map(({e,c})=>[e.nombre,e.sexo,c.nombre,c.nivel,c.depto,c.area,c.empresa,...(sal?[e.salario??""]:[]),score(e,c).s??""])}};
+}
+F.forEach(f=>$(f).onchange=()=>{const i=F.indexOf(f);if(i<3)F.slice(i+1,4).forEach(x=>$(x).value="");
+  const ag=$("fAgrupar");
+  if(f==="fArea"&&$(f).value&&ag.value==="area")ag.value="depto";
+  if(f==="fDepto"&&$(f).value&&["area","depto"].includes(ag.value))ag.value="cargo";
+  fillFilters();renderRep()});
+$("fAgrupar").onchange=renderRep;
+$("limpiar").onclick=()=>{resetF();renderRep()};
+$("exportar").onclick=()=>{
+  if(!(window.google&&google.script&&google.script.run)){$("expMsg").textContent="La exportación solo funciona dentro de Apps Script.";return}
+  $("expMsg").textContent="Exportando…";
+  google.script.run.withSuccessHandler(url=>{$("expMsg").innerHTML=`Listo: <a href="${esc(url)}" target="_blank">abrir el reporte en Google Sheets</a>`})
+    .withFailureHandler(err=>{$("expMsg").textContent="Error al exportar: "+err.message}).exportarReporte(lastExport);
+};
+
+/* ---------- arranque según parámetros de URL ---------- */
+fillFilters();
+if(P.empresa&&EMP[P.empresa]) $("oEmp").value=P.empresa;
+renderOrg();
+if(P.vista==="reporte"){
+  const map={empresa:"fEmpresa",area:"fArea",depto:"fDepto",cargo:"fCargo",nivel:"fNivel",sexo:"fSexo",jefe:"fJefe"};
+  Object.entries(map).forEach(([p,f])=>{if(P[p]){$(f).value=P[p];fillFilters();$(f).value=P[p];}});
+  if(P.agrupar&&DIM[P.agrupar]) $("fAgrupar").value=P.agrupar;
+  else if(P.area) $("fAgrupar").value="depto"; else if(P.depto) $("fAgrupar").value="cargo";
+  tab(true);
+}else if(P.cargo&&CAR[P.cargo]){
+  openPath(P.cargo); renderOrg(); show(P.cargo,true);
+}
+</script>
+</body>
+</html>
