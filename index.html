@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="es">
 <head>
-<base target="_top">
+<title>Organigrama · Grupo Diosmar</title>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <style>
@@ -88,13 +88,30 @@ tr.click:hover td{background:var(--chip)}
 .hidden{display:none!important}
 .msg{font-size:13px;padding:0 16px 10px}
 @media (max-width:900px){.wrap{flex-direction:column}.panel{width:100%;position:static;max-height:none}.chartbox{max-height:70vh}}
+#login{position:fixed;inset:0;background:var(--bg);display:flex;align-items:center;justify-content:center;z-index:50;padding:16px}
+#login .card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:32px 28px;max-width:380px;width:100%;text-align:center;box-shadow:0 8px 30px rgba(0,0,0,.08)}
+#login h2{margin:0 0 6px;font-size:20px}
+#login p{color:var(--muted);margin:0 0 20px;font-size:14px}
+#gbtn{display:flex;justify-content:center;min-height:44px}
+#lmsg{margin-top:16px;font-size:13px;color:var(--bad)}
+.spin{width:28px;height:28px;border:3px solid var(--chip);border-top-color:var(--accent);border-radius:50%;animation:sp 1s linear infinite;margin:10px auto}
+@keyframes sp{to{transform:rotate(360deg)}}
+.usr{font-size:12px;color:var(--muted)}
 </style>
 </head>
 <body>
+<div id="login"><div class="card">
+  <h2>Organigrama · Grupo Diosmar</h2>
+  <p>Inicia sesión con tu cuenta corporativa de Google.</p>
+  <div id="gbtn"></div>
+  <div id="lwait" class="hidden"><div class="spin"></div><div class="usr">Cargando datos…</div></div>
+  <div id="lmsg"></div>
+</div></div>
 <header>
   <h1 id="titulo"></h1>
   <div class="tabs"><button id="tabOrg" class="on">Organigrama</button><button id="tabRep">Reporte de personal</button></div>
   <span class="gen" id="gen"></span>
+  <span class="usr" id="usr"></span><button class="btn" id="salir">Salir</button>
 </header>
 <div id="avisos"></div>
 
@@ -152,8 +169,7 @@ tr.click:hover td{background:var(--chip)}
 </section>
 
 <script>
-const D = <?!= payload ?>;
-const P = <?!= params ?>;
+function iniciar(D, P){
 
 /* ---------- colores ---------- */
 const COLORS = {"azul marino":"#1F3A5F","azul":"#2F6FB0","celeste":"#0E8FB8","verde azulado":"#2B7A78","verde":"#2F855A","verde oliva":"#6B7F2A","mostaza":"#B7791F","naranja":"#C05621","rojo ladrillo":"#B83232","vino":"#8B2E4F","rosa oscuro":"#B83280","morado":"#7B3F99","índigo":"#4C51BF","indigo":"#4C51BF","café":"#7B5236","cafe":"#7B5236","gris pizarra":"#4A5568","negro":"#1A1A1A","gris claro":"#A0AEC0","blanco":"#FFFFFF"};
@@ -388,11 +404,10 @@ F.forEach(f=>$(f).onchange=()=>{const i=F.indexOf(f);if(i<3)F.slice(i+1,4).forEa
   fillFilters();renderRep()});
 $("fAgrupar").onchange=renderRep;
 $("limpiar").onclick=()=>{resetF();renderRep()};
-$("exportar").onclick=()=>{
-  if(!(window.google&&google.script&&google.script.run)){$("expMsg").textContent="La exportación solo funciona dentro de Apps Script.";return}
+$("exportar").onclick=async()=>{
   $("expMsg").textContent="Exportando…";
-  google.script.run.withSuccessHandler(url=>{$("expMsg").innerHTML=`Listo: <a href="${esc(url)}" target="_blank">abrir el reporte en Google Sheets</a>`})
-    .withFailureHandler(err=>{$("expMsg").textContent="Error al exportar: "+err.message}).exportarReporte(lastExport);
+  try{const r=await api("exportar",lastExport);$("expMsg").innerHTML=`Listo: <a href="${esc(r.url)}" target="_blank" rel="noopener">abrir el reporte en Google Sheets</a>`}
+  catch(err){$("expMsg").textContent="Error al exportar: "+err.message}
 };
 
 /* ---------- arranque según parámetros de URL ---------- */
@@ -408,6 +423,96 @@ if(P.vista==="reporte"){
 }else if(P.cargo&&CAR[P.cargo]){
   openPath(P.cargo); renderOrg(); show(P.cargo,true);
 }
+} // fin iniciar
 </script>
+
+<script>
+/* ======================= CONFIGURACIÓN ======================= */
+const CONFIG = {
+  // URL de la implementación de Apps Script con acceso "Cualquier usuario" (termina en /exec)
+  API_URL: "https://script.google.com/macros/s/AKfycbzo0zl4mUwO-699_tqvNthAjQeFwusmpHVflvNwVZURdorZKyTCVIM9r97Yj8DJ9keBYA/exec",
+  // OPCIONAL: ID de cliente OAuth de Google Cloud para entrar con "Iniciar sesión con Google".
+  // Si lo dejas así, solo se puede entrar desde el botón de la app (AppSheet).
+  CLIENT_ID: "",
+  // Sugiere este dominio al elegir cuenta (la validación real la hace Apps Script)
+  DOMINIO: "focustechinc.net"
+};
+/* ============================================================= */
+
+let TOKEN = null, EMAIL = "", TIPO = "google";
+const TK = "org_token", TA = "org_app";
+const ssGet = k => { try { return sessionStorage.getItem(k) } catch (e) { return null } };
+const ssSet = (k, v) => { try { v == null ? sessionStorage.removeItem(k) : sessionStorage.setItem(k, v) } catch (e) {} };
+function jwtExp(t){ try{ return JSON.parse(atob(t.split(".")[1].replace(/-/g,"+").replace(/_/g,"/"))).exp*1000 }catch(e){ return 0 } }
+function loginMsg(m){ document.getElementById("lmsg").textContent = m || "" }
+function waiting(on){ document.getElementById("lwait").classList.toggle("hidden",!on); document.getElementById("gbtn").classList.toggle("hidden",on) }
+
+async function api(accion, data){
+  const r = await fetch(CONFIG.API_URL, { method:"POST", headers:{ "Content-Type":"text/plain;charset=utf-8" },
+    body: JSON.stringify({ accion, tipo: TIPO, token: TOKEN, email: EMAIL, data }) });
+  const j = await r.json();
+  if (!j.ok) {
+    if (j.code === 401) { ssSet(TK, null); ssSet(TA, null); }
+    throw new Error(j.error || "Error del servidor");
+  }
+  return j;
+}
+
+async function cargar(){
+  waiting(true); loginMsg("");
+  try {
+    const j = await api("datos");
+    document.getElementById("usr").textContent = j.usuario;
+    document.getElementById("login").classList.add("hidden");
+    iniciar(j.data, Object.fromEntries(new URLSearchParams(location.search)));
+  } catch (err) {
+    waiting(false); ssSet(TK, null); ssSet(TA, null); TOKEN = null;
+    if (!CONFIG.CLIENT_ID) document.getElementById("gbtn").classList.add("hidden");
+    loginMsg(err.message === "Failed to fetch" ? "No se pudo conectar con el servidor. Revisa API_URL y que la implementación tenga acceso 'Cualquier usuario'." : err.message);
+  }
+}
+
+function boot(){
+  if (CONFIG.API_URL.startsWith("PEGAR")) { loginMsg("Falta configurar API_URL al inicio del segundo <script> de index.html."); return; }
+
+  // 1) Acceso desde la app (igual que marcación): ?email=...&token=...
+  //    Se guarda en la sesión y se quita de la barra de direcciones.
+  const qs = new URLSearchParams(location.search);
+  const tk = qs.get("token") || qs.get("t");
+  if (tk) {
+    ssSet(TA, JSON.stringify({ token: tk, email: qs.get("email") || "" }));
+    ["token", "t", "email"].forEach(k => qs.delete(k));
+    history.replaceState(null, "", location.pathname + (qs.toString() ? "?" + qs : "") + location.hash);
+  }
+  let app = null; try { app = JSON.parse(ssGet(TA) || "null"); } catch (e) {}
+  if (app && app.token) { TIPO = "app"; TOKEN = app.token; EMAIL = app.email; cargar(); return; }
+
+  // 2) Login con Google (solo si configuraste CLIENT_ID)
+  if (!CONFIG.CLIENT_ID) {
+    document.getElementById("gbtn").classList.add("hidden");
+    document.querySelector("#login p").textContent = "Abre el organigrama desde el botón de la app.";
+    return;
+  }
+  const s = document.createElement("script");
+  s.src = "https://accounts.google.com/gsi/client"; s.async = true;
+  s.onload = () => {
+    google.accounts.id.initialize({
+      client_id: CONFIG.CLIENT_ID, hd: CONFIG.DOMINIO, auto_select: true,
+      callback: resp => { TIPO = "google"; TOKEN = resp.credential; ssSet(TK, TOKEN); cargar(); }
+    });
+    google.accounts.id.renderButton(document.getElementById("gbtn"), { theme:"outline", size:"large", text:"signin_with", locale:"es" });
+    const saved = ssGet(TK);
+    if (saved && jwtExp(saved) > Date.now() + 60000) { TOKEN = saved; cargar(); }
+    else google.accounts.id.prompt();
+  };
+  document.head.appendChild(s);
+}
+document.getElementById("salir").onclick = () => {
+  ssSet(TK, null); ssSet(TA, null);
+  if (window.google && google.accounts) google.accounts.id.disableAutoSelect();
+  location.reload();
+};
+</script>
+<script>boot();</script>
 </body>
 </html>
