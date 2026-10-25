@@ -154,7 +154,8 @@ tr.click:hover td{background:var(--chip)}
         <option value="empresa">Empresa</option><option value="sexo">Sexo</option>
       </select></div>
     <button class="btn" id="limpiar">Limpiar filtros</button>
-    <button class="btn pri" id="exportar">Exportar a Google Sheets</button>
+    <button class="btn pri" id="exportar">Descargar Excel</button>
+    <button class="btn" id="exportarCsv">Descargar CSV</button>
   </div>
   <div class="msg" id="expMsg"></div>
   <div class="kpis" id="kpis"></div>
@@ -404,10 +405,43 @@ F.forEach(f=>$(f).onchange=()=>{const i=F.indexOf(f);if(i<3)F.slice(i+1,4).forEa
   fillFilters();renderRep()});
 $("fAgrupar").onchange=renderRep;
 $("limpiar").onclick=()=>{resetF();renderRep()};
+/* ---------- descargas (se generan en el navegador, no tocan Google Sheets) ---------- */
+const hoy=()=>{const d=new Date();return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0")};
+function bajar(blob,nombre){const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=nombre;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},1000)}
+function cargarXLSX(){
+  if(window.XLSX) return Promise.resolve();
+  return new Promise((ok,fail)=>{const s=document.createElement("script");
+    s.src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js";s.onload=ok;s.onerror=()=>fail(new Error("No se pudo cargar el generador de Excel"));document.head.appendChild(s)});
+}
 $("exportar").onclick=async()=>{
-  $("expMsg").textContent="Exportando…";
-  try{const r=await api("exportar",lastExport);$("expMsg").innerHTML=`Listo: <a href="${esc(r.url)}" target="_blank" rel="noopener">abrir el reporte en Google Sheets</a>`}
-  catch(err){$("expMsg").textContent="Error al exportar: "+err.message}
+  const x=lastExport; if(!x) return;
+  $("expMsg").textContent="Generando Excel…";
+  try{
+    await cargarXLSX();
+    const cab=[["Reporte de personal"],["Generado: "+new Date().toLocaleString("es-EC")],["Filtros: "+x.filtros],[]];
+    const hoja=(headers,rows,pctCol)=>{
+      const ws=XLSX.utils.aoa_to_sheet([...cab,headers,...rows]);
+      ws["!cols"]=headers.map((h,i)=>({wch:Math.min(45,Math.max(String(h).length,...rows.map(r=>String(r[i]??"").length))+2)}));
+      ws["!autofilter"]={ref:XLSX.utils.encode_range({s:{r:cab.length,c:0},e:{r:cab.length+rows.length,c:headers.length-1}})};
+      if(pctCol>=0) rows.forEach((r,i)=>{const c=ws[XLSX.utils.encode_cell({r:cab.length+1+i,c:pctCol})];if(c&&typeof c.v==="number")c.z="0%"});
+      return ws;
+    };
+    const wb=XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb,hoja(x.resumen.headers,x.resumen.rows,x.resumen.headers.indexOf("% Mujeres")),"Resumen por "+x.agrupar.slice(0,18));
+    XLSX.utils.book_append_sheet(wb,hoja(x.detalle.headers,x.detalle.rows,-1),"Detalle de personas");
+    XLSX.writeFile(wb,"Reporte_Personal_"+hoy()+".xlsx");
+    $("expMsg").textContent="";
+  }catch(err){$("expMsg").textContent="Error al generar el Excel: "+err.message+". Prueba con Descargar CSV."}
+};
+$("exportarCsv").onclick=()=>{
+  const x=lastExport; if(!x) return;
+  const q=v=>{v=v??"";if(typeof v==="number")return String(v).replace(".",",");v=String(v);return /[";\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v};
+  const lin=r=>r.map(q).join(";");
+  const pct=x.resumen.headers.indexOf("% Mujeres");
+  const res=x.resumen.rows.map(r=>r.map((v,i)=>i===pct?Math.round(v*100)+"%":v));
+  const txt=[lin(["Reporte de personal"]),lin(["Filtros: "+x.filtros]),"",lin(["RESUMEN POR "+x.agrupar.toUpperCase()]),lin(x.resumen.headers),...res.map(lin),"",
+             lin(["DETALLE DE PERSONAS"]),lin(x.detalle.headers),...x.detalle.rows.map(lin)].join("\r\n");
+  bajar(new Blob(["\ufeff"+txt],{type:"text/csv;charset=utf-8"}),"Reporte_Personal_"+hoy()+".csv");
 };
 
 /* ---------- arranque según parámetros de URL ---------- */
