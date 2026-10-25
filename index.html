@@ -102,7 +102,7 @@ tr.click:hover td{background:var(--chip)}
 <body>
 <div id="login"><div class="card">
   <h2>Organigrama · Grupo Diosmar</h2>
-  <p>Inicia sesión con tu cuenta corporativa de Google.</p>
+  <p id="lsub"></p>
   <div id="gbtn"></div>
   <div id="lwait" class="hidden"><div class="spin"></div><div class="usr">Cargando datos…</div></div>
   <div id="lmsg"></div>
@@ -444,6 +444,7 @@ const TK = "org_token", TA = "org_app";
 const ssGet = k => { try { return sessionStorage.getItem(k) } catch (e) { return null } };
 const ssSet = (k, v) => { try { v == null ? sessionStorage.removeItem(k) : sessionStorage.setItem(k, v) } catch (e) {} };
 function jwtExp(t){ try{ return JSON.parse(atob(t.split(".")[1].replace(/-/g,"+").replace(/_/g,"/"))).exp*1000 }catch(e){ return 0 } }
+function setSub(t){ document.getElementById("lsub").textContent = t }
 function loginMsg(m){ document.getElementById("lmsg").textContent = m || "" }
 function waiting(on){ document.getElementById("lwait").classList.toggle("hidden",!on); document.getElementById("gbtn").classList.toggle("hidden",on) }
 
@@ -467,6 +468,7 @@ async function cargar(){
     iniciar(j.data, Object.fromEntries(new URLSearchParams(location.search)));
   } catch (err) {
     waiting(false); ssSet(TK, null); ssSet(TA, null); TOKEN = null;
+    setSub("No estás autorizado para revisar el organigrama.");
     if (!CONFIG.CLIENT_ID) document.getElementById("gbtn").classList.add("hidden");
     loginMsg(err.message === "Failed to fetch" ? "No se pudo conectar con el servidor. Revisa API_URL y que la implementación tenga acceso 'Cualquier usuario'." : err.message);
   }
@@ -485,14 +487,15 @@ function boot(){
     history.replaceState(null, "", location.pathname + (qs.toString() ? "?" + qs : "") + location.hash);
   }
   let app = null; try { app = JSON.parse(ssGet(TA) || "null"); } catch (e) {}
-  if (app && app.token) { TIPO = "app"; TOKEN = app.token; EMAIL = app.email; cargar(); return; }
+  if (app && app.token) { setSub("Autorizado a ver el organigrama"); TIPO = "app"; TOKEN = app.token; EMAIL = app.email; cargar(); return; }
 
   // 2) Login con Google (solo si configuraste CLIENT_ID)
   if (!CONFIG.CLIENT_ID) {
     document.getElementById("gbtn").classList.add("hidden");
-    document.querySelector("#login p").textContent = "Abre el organigrama desde el botón de la app.";
+    setSub("No estás autorizado para revisar el organigrama.");
     return;
   }
+  setSub("Inicia sesión con tu cuenta corporativa de Google.");
   const s = document.createElement("script");
   s.src = "https://accounts.google.com/gsi/client"; s.async = true;
   s.onload = () => {
